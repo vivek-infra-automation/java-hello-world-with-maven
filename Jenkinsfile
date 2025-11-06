@@ -1,13 +1,21 @@
 pipeline{
-    agent any
+    agent {
+        docker {
+            image 'maven:3.8-amazoncorretto-11'
+            args '-v $HOME/.m2:/root/.m2'  // Cache Maven dependencies
+        }
+    }
 
     parameters {
         choice choices: ['master', 'develop', 'feature'], description: 'Please select branch  for build', name: 'Branch'
     }
 
     environment {
-        MAVEN_HOME = '/opt/maven-mvnd-1.0.3-linux-amd64'
-        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
+        DOCKER_IMAGE = 'java-hello-world'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        DOCKER_FULL_IMAGE = "${DOCKER_IMAGE}:${DOCKER_TAG}"
+        GIT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+        JAR_NAME = "jb-hello-world-maven-${BUILD_NUMBER}-${GIT_COMMIT}.jar"
     }
 
     stages{
@@ -18,13 +26,35 @@ pipeline{
         }
         stage('build'){
             steps{
-               sh '${MAVEN_HOME}/bin/mvnd -B -DskipTests clean package'
+                script {
+                    sh """
+                        mvn -B -DskipTests clean package \
+                        -Drevision=${BUILD_NUMBER}-${GIT_COMMIT}
+                    """
+                }
             }
         }
 
-        stage('run jar'){
-            steps{
-               sh 'java -jar target/*.jar'
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh """
+                        docker build \
+                        --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
+                        --build-arg GIT_COMMIT=${GIT_COMMIT} \
+                        -t ${DOCKER_FULL_IMAGE} .
+                    """
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                script {
+                    sh "docker stop ${DOCKER_IMAGE} || true"
+                    sh "docker rm ${DOCKER_IMAGE} || true"
+                    sh "docker run -d --name ${DOCKER_IMAGE} ${DOCKER_FULL_IMAGE}"
+                }
             }
         }
 
@@ -34,13 +64,22 @@ pipeline{
                 ok "Yes, archive it"
             }
             steps{
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, onlyIfSuccessful: true
-            }
+                script {
+                    def jarPath = sh(script: 'find target -name "*.jar"', returnStdout: true).trim()
+                    archiveArtifacts artifacts: jarPath, fingerprint: true, onlyIfSuccessful: true
+                    echo "Archived JAR file: ${jarPath}"
+                }
         }
     }
 
     post {
         always {
+            script {
+                // Clean up Docker resources
+                sh "docker stop ${DOCKER_IMAGE} || true"
+                sh "docker rm ${DOCKER_IMAGE} || true"
+                sh "docker rmi ${DOCKER_FULL_IMAGE} || true"
+            }
             cleanWs()
         }
     }

@@ -7,3 +7,6 @@ dependency-reduced-pom.xml
 .settings/
 .vscode
 .DS_Store
+.whitesource
+.idea/
+
