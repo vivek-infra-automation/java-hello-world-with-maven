@@ -23,7 +23,7 @@ pipeline {
         stage('Set Environment Variables') {
             steps {
                 script {
-                    env.GIT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    env.GIT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()[0..6]
                     env.DOCKER_IMAGE = 'cloud2help/cicd-projects'
                     env.JAR_NAME = "jb-${params.Build_Version}-${BUILD_NUMBER}-${env.GIT_COMMIT}.jar"
                     env.DOCKER_TAG = "java-hello-world-${BUILD_NUMBER}-${env.GIT_COMMIT}"
@@ -45,7 +45,7 @@ pipeline {
                     def jarFile = sh(script: 'ls target/*.jar | head -1', returnStdout: true).trim()
                     sh "cp ${jarFile} ${JAR_NAME}"
                     archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
-                    echo "✅ Maven build completed: ${JAR_NAME}"
+                    echo "Maven build completed: ${JAR_NAME}"
                 }
             }
         }
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 script {
                     def appImage = docker.build("${DOCKER_FULL_IMAGE}", ".")
-                    echo "✅ Docker image ${DOCKER_FULL_IMAGE} built successfully."
+                    echo "Docker image ${DOCKER_FULL_IMAGE} built successfully."
                 }
             }
         }
@@ -64,10 +64,8 @@ pipeline {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'Docker_Cred') {
                         docker.image("${DOCKER_FULL_IMAGE}").push()
-                        sh "docker tag ${DOCKER_FULL_IMAGE} ${DOCKER_IMAGE}:latest"
-                        docker.image("${DOCKER_IMAGE}:latest").push()
                     }
-                    echo "🚀 Pushed ${DOCKER_FULL_IMAGE} and latest tag to Docker Hub."
+                    echo "Pushed ${DOCKER_FULL_IMAGE} to Docker Hub."
                 }
             }
         }
