@@ -23,63 +23,57 @@ pipeline {
         stage('build'){
             steps{
                 script {
-                    docker.image('maven:3.9.9-eclipse-temurin-17').inside('-v /root/.m2:/root/.m2') {
+                    def appImage = docker.image('maven:3.9.9-eclipse-temurin-17').inside('-v /root/.m2:/root/.m2') {
                     sh """
                         mvn -B -DskipTests clean package \
                         -Drevision=${BUILD_NUMBER}-${GIT_COMMIT}
                     """
                     }
+                    sh "cp target/java-hello-world-${BUILD_NUMBER}-${GIT_COMMIT}.jar ${JAR_NAME}"
+                    echo "Build successful: ${JAR_NAME} created."
+                    archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
+                    echo "Maven build and packaging completed."
+
+                    // List Docker images for verification
+                    sh "docker images"
+                    return appImage
+
                 }
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    def appImage = docker.build("${DOCKER_FULL_IMAGE}", "-f Dockerfile .")
-                    echo "Docker Image ${appImage} built successfully."
-                    docker.image("${DOCKER_FULL_IMAGE}").run()
-                }
-            }
-        }
+        // stage('Build Docker Image') {
+        //     steps {
+        //         script {
+        //             def appImage = docker.build("${DOCKER_FULL_IMAGE}", "-f Dockerfile .")
+        //             echo "Docker Image ${appImage} built successfully."
+        //             docker.image("${DOCKER_FULL_IMAGE}").run()
+        //         }
+        //     }
+        // }      
 
-        stage('archive artifact'){
-            input {
-                message "Do you want to archive the artifact?"
-                ok "Yes, archive it"
-            }
-            steps{
-                script {
-                    def jarPath = sh(script: 'find target -name "*.jar"', returnStdout: true).trim()
-                    archiveArtifacts artifacts: jarPath, fingerprint: true, onlyIfSuccessful: true
-                    echo "Archived JAR file: ${jarPath}"
-                }
-            }
-        }
-        
-
-        stage('Push Docker Image'){
-            steps {
-                script {
-                    withDocker.withRegistry('https://index.docker.io/v1/', 'Docker_Cred') {
-                        def appImage = docker.image("${DOCKER_FULL_IMAGE}")
-                        appImage.push()
-                        echo "Docker Image ${DOCKER_FULL_IMAGE} pushed successfully to Docker Hub."
-                    }
-                }
-            }
-        }
+        // stage('Push Docker Image'){
+        //     steps {
+        //         script {
+        //             withDocker.withRegistry('https://index.docker.io/v1/', 'Docker_Cred') {
+        //                 def appImage = docker.image("${DOCKER_FULL_IMAGE}")
+        //                 appImage.push()
+        //                 echo "Docker Image ${DOCKER_FULL_IMAGE} pushed successfully to Docker Hub."
+        //             }
+        //         }
+        //     }
+        // }
     }
 
-    post {
-        always {
-            script {
-                // Clean up Docker resources
-                sh "docker stop ${DOCKER_IMAGE} || true"
-                sh "docker rm ${DOCKER_IMAGE} || true"
-                sh "docker rmi ${DOCKER_FULL_IMAGE} || true"
-            }
-            cleanWs()
-        }
-    }
+    // post {
+    //     always {
+    //         script {
+    //             // Clean up Docker resources
+    //             sh "docker stop ${DOCKER_IMAGE} || true"
+    //             sh "docker rm ${DOCKER_IMAGE} || true"
+    //             sh "docker rmi ${DOCKER_FULL_IMAGE} || true"
+    //         }
+    //         cleanWs()
+    //     }
+    // }
 }
