@@ -1,4 +1,4 @@
-pipeline{
+pipeline {
     agent {
         docker {
             image 'maven:3.8-amazoncorretto-11'
@@ -72,14 +72,15 @@ pipeline{
                 }
         }
 
-        stage('Push Docker Image') {
+        stage('Push Docker Image'){
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'Docker_Cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh """
-                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
-                        docker push ${DOCKER_FULL_IMAGE}
-                    """
+                        sh """
+                            docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+                            docker push ${DOCKER_FULL_IMAGE}
+                        """
+                    }
                 }
             }
         }
