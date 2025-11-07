@@ -2,20 +2,21 @@ pipeline{
     agent {
         docker {
             image 'maven:3.8-amazoncorretto-11'
-            args '-v $HOME/.m2:/root/.m2'  // Cache Maven dependencies
+            args '-v $HOME/.m2:/root/.m2'
         }
     }
 
     parameters {
         choice choices: ['master', 'develop', 'feature'], description: 'Please select branch  for build', name: 'Branch'
+        choice choices: ['1.0.1', '1.0.2'], description: 'Select the Version', name: 'Build_Version'
     }
 
     environment {
-        DOCKER_IMAGE = 'java-hello-world'
-        DOCKER_TAG = "${BUILD_NUMBER}"
-        DOCKER_FULL_IMAGE = "${DOCKER_IMAGE}:${DOCKER_TAG}"
+        DOCKER_IMAGE = 'cloud2help/cicd-projects'
         GIT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-        JAR_NAME = "jb-hello-world-maven-${BUILD_NUMBER}-${GIT_COMMIT}.jar"
+        JAR_NAME = "jb-${params.Build_Version}-${BUILD_NUMBER}-${GIT_COMMIT}.jar"
+        DOCKER_TAG = "java-hello-world-${BUILD_NUMBER}-${GIT_COMMIT}"
+        DOCKER_FULL_IMAGE = "${DOCKER_IMAGE}:${DOCKER_TAG}"
     }
 
     stages{
@@ -53,7 +54,7 @@ pipeline{
                 script {
                     sh "docker stop ${DOCKER_IMAGE} || true"
                     sh "docker rm ${DOCKER_IMAGE} || true"
-                    sh "docker run -d --name ${DOCKER_IMAGE} ${DOCKER_FULL_IMAGE}"
+                    sh "docker run --name ${DOCKER_IMAGE} ${DOCKER_FULL_IMAGE}"
                 }
             }
         }
@@ -70,6 +71,19 @@ pipeline{
                     echo "Archived JAR file: ${jarPath}"
                 }
         }
+
+        stage('Push Docker Image') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'Docker_Cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    sh """
+                        docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+                        docker push ${DOCKER_FULL_IMAGE}
+                    """
+                }
+            }
+        }
+    }
     }
 
     post {
