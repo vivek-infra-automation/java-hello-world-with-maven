@@ -36,22 +36,9 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh """
-                        docker build \
-                        --build-arg BUILD_NUMBER=${BUILD_NUMBER} \
-                        --build-arg GIT_COMMIT=${GIT_COMMIT} \
-                        -t ${DOCKER_FULL_IMAGE} .
-                    """
-                }
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                script {
-                    sh "docker stop ${DOCKER_IMAGE} || true"
-                    sh "docker rm ${DOCKER_IMAGE} || true"
-                    sh "docker run --name ${DOCKER_IMAGE} ${DOCKER_FULL_IMAGE}"
+                    def appImage = docker.build("${DOCKER_FULL_IMAGE}", "-f Dockerfile .")
+                    echo "Docker Image ${appImage} built successfully."
+                    docker.image("${DOCKER_FULL_IMAGE}").run()
                 }
             }
         }
@@ -74,11 +61,10 @@ pipeline {
         stage('Push Docker Image'){
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'Docker_Cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh """
-                            docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
-                            docker push ${DOCKER_FULL_IMAGE}
-                        """
+                    withDocker.withRegistry('https://index.docker.io/v1/', 'Docker_Cred') {
+                        def appImage = docker.image("${DOCKER_FULL_IMAGE}")
+                        appImage.push()
+                        echo "Docker Image ${DOCKER_FULL_IMAGE} pushed successfully to Docker Hub."
                     }
                 }
             }
