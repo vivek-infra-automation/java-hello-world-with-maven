@@ -22,7 +22,7 @@ pipeline{
     stages{
         stage('checkout'){
             steps{
-                checkout([$class: 'GitSCM', branches: [[name: params.Branch]], extensions: [], userRemoteConfigs: [[credentialsId: 'github_id', url: 'https://github.com/vivek-infra-automation/java-hello-world-with-maven.git']]])
+                checkout([$class: 'GitSCM', branches: [[name: params.Branch]], extensions: [], userRemoteConfigs: [[credentialsId: 'github_cred', url: 'https://github.com/vivek-infra-automation/java-hello-world-with-maven.git']]])
             }
         }
         stage('build'){
