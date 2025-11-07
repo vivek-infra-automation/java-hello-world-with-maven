@@ -21,18 +21,14 @@ pipeline {
             }
         }
         stage('build'){
-            agent {
-                docker {
-                    image 'maven:3.8.6-openjdk-17'
-                    args '-v /root/.m2:/root/.m2'
-                }
-            }
             steps{
                 script {
+                    docker.image('maven:3.9.9-eclipse-temurin-17').inside('-v /root/.m2:/root/.m2') {
                     sh """
                         mvn -B -DskipTests clean package \
                         -Drevision=${BUILD_NUMBER}-${GIT_COMMIT}
                     """
+                    }
                 }
             }
         }
