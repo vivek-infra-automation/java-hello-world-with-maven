@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.8-amazoncorretto-11'
-            args '-v $HOME/.m2:/root/.m2'
-        }
-    }
+    agent any 
 
     parameters {
         choice choices: ['master', 'develop', 'feature'], description: 'Please select branch  for build', name: 'Branch'
