@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        docker {
+        dockerContainer {
             image 'maven:3.8-amazoncorretto-11'
             args '-v $HOME/.m2:/root/.m2'
         }
