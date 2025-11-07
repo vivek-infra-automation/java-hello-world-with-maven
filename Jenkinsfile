@@ -70,7 +70,9 @@ pipeline {
                     archiveArtifacts artifacts: jarPath, fingerprint: true, onlyIfSuccessful: true
                     echo "Archived JAR file: ${jarPath}"
                 }
+            }
         }
+        
 
         stage('Push Docker Image'){
             steps {
