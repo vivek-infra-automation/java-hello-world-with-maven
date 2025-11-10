@@ -24,9 +24,9 @@ pipeline {
             steps {
                 script {
                     env.GIT_COMMIT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()[0..6]
-                    env.DOCKER_IMAGE = 'cloud2help/cicd-projects'
+                    env.DOCKER_IMAGE = '150916258276.dkr.ecr.eu-north-1.amazonaws.com/cicd-project/java-helloworld'
                     env.JAR_NAME = "jb-${params.Build_Version}-${BUILD_NUMBER}-${env.GIT_COMMIT}.jar"
-                    env.DOCKER_TAG = "java-hello-world-${BUILD_NUMBER}-${env.GIT_COMMIT}"
+                    env.DOCKER_TAG = "${BUILD_NUMBER}-${env.GIT_COMMIT}"
                     env.DOCKER_FULL_IMAGE = "${env.DOCKER_IMAGE}:${env.DOCKER_TAG}"
                 }
             }
@@ -62,7 +62,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'Docker_Cred') {
+                    docker.withRegistry('150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'AWS_Cred') {
                         docker.image("${DOCKER_FULL_IMAGE}").push()
                     }
                     echo "Pushed ${DOCKER_FULL_IMAGE} to Docker Hub."
