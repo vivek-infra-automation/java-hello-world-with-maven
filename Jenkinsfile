@@ -62,14 +62,9 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // docker.withRegistry('150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'AWS_Cred') {
-                    //     docker.image("${DOCKER_FULL_IMAGE}").push()
-                    // }
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS_Cred']])
-                    sh '''
-                        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 150916258276.dkr.ecr.eu-north-1.amazonaws.com
-                        docker push ${DOCKER_FULL_IMAGE}
-                    '''
+                    docker.withRegistry('https://150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'ecr.eu-north-1:AWS_Credentials') {
+                        docker.image("${DOCKER_FULL_IMAGE}").push()
+                    }
                     echo "Pushed ${DOCKER_FULL_IMAGE} to ECR."
                 }
             }
