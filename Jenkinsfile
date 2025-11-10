@@ -32,23 +32,23 @@ pipeline {
             }
         }
 
-        stage('Build with Maven Docker') {
-            steps {
-                script {
-                    docker.image('maven:3.9.9-eclipse-temurin-17').inside('-v /root/.m2:/root/.m2') {
-                        sh """
-                            mvn -B -DskipTests clean package \
-                            -Drevision=${BUILD_NUMBER}-${GIT_COMMIT}
-                        """
-                    }
+        // stage('Build with Maven Docker') {
+        //     steps {
+        //         script {
+        //             docker.image('maven:3.9.9-eclipse-temurin-17').inside('-v /root/.m2:/root/.m2') {
+        //                 sh """
+        //                     mvn -B -DskipTests clean package \
+        //                     -Drevision=${BUILD_NUMBER}-${GIT_COMMIT}
+        //                 """
+        //             }
 
-                    def jarFile = sh(script: 'ls target/*.jar | head -1', returnStdout: true).trim()
-                    sh "cp ${jarFile} ${JAR_NAME}"
-                    archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
-                    echo "Maven build completed: ${JAR_NAME}"
-                }
-            }
-        }
+        //             def jarFile = sh(script: 'ls target/*.jar | head -1', returnStdout: true).trim()
+        //             sh "cp ${jarFile} ${JAR_NAME}"
+        //             archiveArtifacts artifacts: "${JAR_NAME}", fingerprint: true
+        //             echo "Maven build completed: ${JAR_NAME}"
+        //         }
+        //     }
+        // }
 
         stage('Build Docker Image') {
             steps {
@@ -62,9 +62,14 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'AWS_Cred') {
-                        docker.image("${DOCKER_FULL_IMAGE}").push()
-                    }
+                    // docker.withRegistry('150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'AWS_Cred') {
+                    //     docker.image("${DOCKER_FULL_IMAGE}").push()
+                    // }
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AWS_Cred']])
+                    sh '''
+                        aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 150916258276.dkr.ecr.eu-north-1.amazonaws.com
+                        docker push ${DOCKER_FULL_IMAGE}
+                    '''
                     echo "Pushed ${DOCKER_FULL_IMAGE} to ECR."
                 }
             }
