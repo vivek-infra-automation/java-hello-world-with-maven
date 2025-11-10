@@ -65,7 +65,7 @@ pipeline {
                     docker.withRegistry('150916258276.dkr.ecr.eu-north-1.amazonaws.com', 'AWS_Cred') {
                         docker.image("${DOCKER_FULL_IMAGE}").push()
                     }
-                    echo "Pushed ${DOCKER_FULL_IMAGE} to Docker Hub."
+                    echo "Pushed ${DOCKER_FULL_IMAGE} to ECR."
                 }
             }
         }
