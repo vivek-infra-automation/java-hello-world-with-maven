@@ -62,7 +62,7 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-cred' ]]) {
+                    withCredentials([[ $class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'AKIASGI2PLHSPMVDJXVE' ]]) {
                         sh """
                             aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 150916258276.dkr.ecr.eu-north-1.amazonaws.com
                             docker push ${DOCKER_FULL_IMAGE}
