@@ -1,4 +1,4 @@
-FROM maven:3.8-amazoncorretto-11 AS builder
+FROM maven:3.9.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 ARG BUILD_NUMBER=local
 ARG GIT_COMMIT=dev
